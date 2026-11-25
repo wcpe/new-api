@@ -115,9 +115,9 @@ jobs:
 
       - name: Upload artifacts (Windows)
         if: runner.os == 'Windows'
-        uses: actions/upload-artifact@v4
+        uses: actions/cache/save@v4
         with:
-          name: windows-build
+          key: windows-build-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             electron/dist/*.exe
 
@@ -130,7 +130,11 @@ jobs:
 
     steps:
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/cache/restore@v4
+        with:
+          key: windows-build-${{ github.run_id }}-${{ github.run_attempt }}
+          path: windows-build
+          fail-on-cache-miss: true
 
       - name: Upload to Release
         uses: softprops/action-gh-release@v2
