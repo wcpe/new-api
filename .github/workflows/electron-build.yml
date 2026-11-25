@@ -10,6 +10,8 @@ on:
 
 jobs:
   build:
+    permissions:
+      contents: write
     strategy:
       matrix:
         # os: [macos-latest, windows-latest]
@@ -113,33 +115,14 @@ jobs:
       #       electron/dist/*.dmg
       #       electron/dist/*.zip
 
-      - name: Upload artifacts (Windows)
-        if: runner.os == 'Windows'
-        uses: actions/cache/save@v4
-        with:
-          key: windows-build-${{ github.run_id }}-${{ github.run_attempt }}
-          path: |
-            electron/dist/*.exe
-
-  release:
-    needs: build
-    runs-on: ubuntu-latest
-    if: startsWith(github.ref, 'refs/tags/')
-    permissions:
-      contents: write
-
-    steps:
-      - name: Download all artifacts
-        uses: actions/cache/restore@v4
-        with:
-          key: windows-build-${{ github.run_id }}-${{ github.run_attempt }}
-          path: windows-build
-          fail-on-cache-miss: true
-
+      # 直接由构建 job 把产物追加到 Release：同 run 跨 job cache 传递实测
+      # 不可靠（精确 key 也会 miss），产物不越 job 边界。action-gh-release
+      # 对已存在的 release 追加上传文件，矩阵各格可独立执行。
       - name: Upload to Release
+        if: runner.os == 'Windows' && startsWith(github.ref, 'refs/tags/')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            windows-build/*
+            electron/dist/*.exe
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
